@@ -3,35 +3,97 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>钉钉扫码登录</title>
+    <style>
+      #js-info {
+        width: 100%;
+        min-height: 300px;
+        margin-top: 20px;
+        white-space: pre-wrap;
+      }
+    </style>
   </head>
   <body>
     <div id="self_defined_element"></div>
-    <textarea id="js-info" cols="30" rows="10"></textarea>
+    <textarea id="js-info" placeholder="登录信息将显示在这里..."></textarea>
     <script src="https://g.alicdn.com/dingding/h5-dingtalk-login/0.21.0/ddlogin.js"></script>
     <script>
-      // STEP3：在需要的时候，调用 window.DTFrameLogin 方法构造登录二维码，并处理登录成功或失败的回调。
       window.DTFrameLogin(
         {
           id: 'self_defined_element',
           width: 300,
           height: 300,
         },
-        {
-          redirect_uri: encodeURIComponent(''), // 应用配的登录回调地址
-          client_id: '', // 应用的client_id
+        {	
+          redirect_uri: encodeURIComponent('http://10.0.2.202:3666/'),
+          client_id: 'ding3tzwvbu0dvxdtunc',
           scope: 'openid',
           response_type: 'code',
           prompt: 'consent',
         },
         async (loginResult) => {
           document.getElementById('self_defined_element').style.display = 'none'
-          const { redirectUrl, authCode, state } = loginResult
-          const res = await fetch(redirectUrl).then(res => res.json())
-          document.getElementById('js-info').value = JSON.stringify(res.data)
+          try {
+            // 首先显示钉钉的原始返回数据
+            document.getElementById('js-info').value = 
+              '钉钉返回数据：\n' + JSON.stringify(loginResult, null, 2) + '\n\n'
+
+            // 直接使用返回的 authCode
+            const authCode = loginResult.authCode
+            
+            console.log('获取到的 authCode:', authCode)
+            const requestUrl = `/auth?authCode=${authCode}`
+            
+            console.log('请求URL:', requestUrl)
+            document.getElementById('js-info').value += 
+              '正在发送请求到：' + requestUrl + '\n\n'
+
+            const response = await fetch(requestUrl, {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/json'
+              }
+            });
+            
+            if (!response.ok) {
+              const errorText = await response.text();
+              let errorDetails;
+              try {
+                errorDetails = JSON.parse(errorText);
+              } catch (e) {
+                errorDetails = errorText;
+              }
+              
+              document.getElementById('js-info').value += 
+                '服务器返回错误：\n' +
+                `状态码: ${response.status}\n` +
+                `错误信息: ${errorDetails.error || '未知错误'}\n` +
+                `详细信息: ${JSON.stringify(errorDetails.details || {}, null, 2)}\n\n` +
+                `完整响应: ${JSON.stringify(errorDetails, null, 2)}`
+              
+              throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
+            }
+            
+            const res = await response.json();
+            
+            // 追加显示后端返回的数据
+            document.getElementById('js-info').value += 
+              '后端返回数据：\n' + JSON.stringify(res.data, null, 2) + '\n\n' +
+              (res.data.department ? '用户有部门信息' : '用户没有部门信息');
+          } catch (error) {
+            console.error('错误:', error)
+            document.getElementById('js-info').value += 
+              '\n\n请求过程中发生错误：\n' +
+              `错误类型: ${error.name}\n` +
+              `错误消息: ${error.message}\n` +
+              `错误堆栈: ${error.stack}\n\n` +
+              `完整错误对象: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`
+          }
         },
         (errorMsg) => {
-          alert(`Login Error: ${errorMsg}`);
+          console.error('登录错误:', errorMsg)
+          document.getElementById('js-info').value = 
+            '登录错误：' + errorMsg
         }
       );
     </script>
