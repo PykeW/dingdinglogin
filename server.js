@@ -86,8 +86,8 @@ app.get('/auth', async (req, res) => {
   }
 })
 
-app.listen(3666, '10.0.2.202', () => {
-  console.log(`Example app listening on http://10.0.2.202:3666`)
+app.listen(3666, '0.0.0.0', () => {
+  console.log(`Example app listening on http://106.14.28.97:3666`)
 })
 
 /**
