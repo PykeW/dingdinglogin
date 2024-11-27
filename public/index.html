@@ -1,28 +1,146 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>钉钉扫码登录</title>
+    <title>登录系统</title>
     <style>
-      #js-info {
+      body {
+        margin: 0;
+        background-color: #f0f2f5;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      }
+      .container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+      .login-box {
+        display: flex;
+        width: 880px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+      }
+      .qr-section, .password-section {
+        flex: 1;
+        padding: 40px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .divider {
+        width: 1px;
+        background-color: #eaeaea;
+        margin: 40px 0;
+      }
+      .section-title {
+        font-size: 22px;
+        font-weight: 500;
+        color: #262626;
+        margin-bottom: 40px;
+        text-align: center;
+      }
+      .form-group {
+        margin-bottom: 24px;
         width: 100%;
-        min-height: 300px;
+      }
+      .form-group input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 1px solid #d9d9d9;
+        border-radius: 6px;
+        box-sizing: border-box;
+        font-size: 14px;
+        transition: all 0.3s;
+      }
+      .form-group input:focus {
+        outline: none;
+        border-color: #1890ff;
+        box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.1);
+      }
+      .form-group input::placeholder {
+        color: #bfbfbf;
+      }
+      .login-btn {
+        width: 100%;
+        padding: 12px;
+        background-color: #1890ff;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 500;
+        transition: background-color 0.3s;
+      }
+      .login-btn:hover {
+        background-color: #40a9ff;
+      }
+      #self_defined_element {
         margin-top: 20px;
-        white-space: pre-wrap;
+      }
+      .qr-wrapper {
+        padding: 20px;
+        border-radius: 12px;
+        background: #fafafa;
+      }
+      .password-section {
+        flex: 1;
+        padding: 40px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .login-form-wrapper {
+        width: 100%;
+        max-width: 320px;
+        margin-top: -40px;
       }
     </style>
   </head>
   <body>
-    <div id="self_defined_element"></div>
-    <textarea id="js-info" placeholder="登录信息将显示在这里..."></textarea>
+    <div class="container">
+      <div class="login-box">
+        <div class="qr-section">
+          <h2 class="section-title">钉钉扫码登录</h2>
+          <div class="qr-wrapper">
+            <div id="self_defined_element"></div>
+          </div>
+        </div>
+        
+        <div class="divider"></div>
+        
+        <div class="password-section">
+          <div class="login-form-wrapper">
+            <h2 class="section-title">账号密码登录</h2>
+            <form id="loginForm">
+              <div class="form-group">
+                <input type="email" id="email" placeholder="请输入邮箱" required>
+              </div>
+              <div class="form-group">
+                <input type="password" id="password" placeholder="请输入密码" required>
+              </div>
+              <button type="submit" class="login-btn">登录</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <script src="https://g.alicdn.com/dingding/h5-dingtalk-login/0.21.0/ddlogin.js"></script>
     <script>
+      // 钉钉扫码登录
       window.DTFrameLogin(
         {
           id: 'self_defined_element',
-          width: 300,
-          height: 300,
+          width: 280,
+          height: 280,
         },
         {	
           redirect_uri: encodeURIComponent('http://106.14.28.97:3666/'),
@@ -32,70 +150,95 @@
           prompt: 'consent',
         },
         async (loginResult) => {
-          document.getElementById('self_defined_element').style.display = 'none'
           try {
-            // 首先显示钉钉的原始返回数据
-            document.getElementById('js-info').value = 
-              '钉钉返回数据：\n' + JSON.stringify(loginResult, null, 2) + '\n\n'
-
-            // 直接使用返回的 authCode
-            const authCode = loginResult.authCode
-            
-            console.log('获取到的 authCode:', authCode)
-            const requestUrl = `/auth?authCode=${authCode}`
-            
-            console.log('请求URL:', requestUrl)
-            document.getElementById('js-info').value += 
-              '正在发送请求到：' + requestUrl + '\n\n'
-
-            const response = await fetch(requestUrl, {
-              method: 'GET',
-              headers: {
-                'Accept': 'application/json'
-              }
-            });
+            const authCode = loginResult.authCode;
+            const response = await fetch(`/auth?authCode=${authCode}`);
             
             if (!response.ok) {
-              const errorText = await response.text();
-              let errorDetails;
-              try {
-                errorDetails = JSON.parse(errorText);
-              } catch (e) {
-                errorDetails = errorText;
-              }
-              
-              document.getElementById('js-info').value += 
-                '服务器返回错误：\n' +
-                `状态码: ${response.status}\n` +
-                `错误信息: ${errorDetails.error || '未知错误'}\n` +
-                `详细信息: ${JSON.stringify(errorDetails.details || {}, null, 2)}\n\n` +
-                `完整响应: ${JSON.stringify(errorDetails, null, 2)}`
-              
-              throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
+              throw new Error('认证失败');
             }
             
             const res = await response.json();
+            const userEmail = res.data.info.email;
             
-            // 追加显示后端返回的数据
-            document.getElementById('js-info').value += 
-              '后端返回数据：\n' + JSON.stringify(res.data, null, 2) + '\n\n' +
-              (res.data.department ? '用户有部门信息' : '用户没有部门信息');
+            // 检查邮箱域名
+            if (!userEmail.endsWith('@heils.cn')) {
+              alert('只允许 @heils.cn 域名的用户登录！');
+              return;
+            }
+
+            // 检查用户是否已绑定账号密码
+            const checkBindingResponse = await fetch('/api/check-binding', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                email: userEmail
+              })
+            });
+
+            const bindingStatus = await checkBindingResponse.json();
+            
+            if (bindingStatus.isBound) {
+              // 已绑定，直接跳转到主页
+              window.location.href = '/main';
+            } else {
+              // 未绑定，跳转到绑定页面
+              window.location.href = `/bind?email=${encodeURIComponent(userEmail)}`;
+            }
+            
           } catch (error) {
-            console.error('错误:', error)
-            document.getElementById('js-info').value += 
-              '\n\n请求过程中发生错误：\n' +
-              `错误类型: ${error.name}\n` +
-              `错误消息: ${error.message}\n` +
-              `错误堆栈: ${error.stack}\n\n` +
-              `完整错误对象: ${JSON.stringify(error, Object.getOwnPropertyNames(error), 2)}`
+            console.error('登录错误:', error);
+            alert('登录过程中发生错误，请重试');
           }
         },
         (errorMsg) => {
-          console.error('登录错误:', errorMsg)
-          document.getElementById('js-info').value = 
-            '登录错误：' + errorMsg
+          console.error('登录错误:', errorMsg);
+          alert('登录失败：' + errorMsg);
         }
       );
+
+      // 账号密码登录
+      document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+
+        // 检查邮箱域名
+        if (!email.endsWith('@heils.cn')) {
+          alert('只允许 @heils.cn 域名的用户登录！');
+          return;
+        }
+
+        try {
+          const response = await fetch('/api/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              email,
+              password
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error('登录失败');
+          }
+
+          const result = await response.json();
+          if (result.success) {
+            window.location.href = '/main';
+          } else {
+            alert(result.message || '账号或密码错误');
+          }
+        } catch (error) {
+          console.error('登录错误:', error);
+          alert('登录失败，请重试');
+        }
+      });
     </script>
   </body>
 </html>
