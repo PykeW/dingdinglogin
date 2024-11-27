@@ -263,7 +263,16 @@ app.get('/auth', async (req, res) => {
     // 获取钉钉用户信息
     const tokenResult = await dingtalk.getUserToken(authCode);
     const userInfo = await dingtalk.getUserInfo(tokenResult.accessToken);
-    console.log('获取到的用户信息:', userInfo);
+    
+    // 添加详细的用户信息日志
+    console.log('\n=== 钉钉用户信息 ===');
+    console.log('用户ID:', userInfo.unionId);
+    console.log('姓名:', userInfo.nick);
+    console.log('邮箱:', userInfo.email);
+    console.log('手机:', userInfo.mobile);
+    console.log('部门:', userInfo.orgEmail);
+    console.log('职位:', userInfo.title);
+    console.log('========================\n');
 
     // 检查邮箱域名
     if (!userInfo.email?.endsWith('@heils.cn')) {
